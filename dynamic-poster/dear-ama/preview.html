@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WordArt Preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      background: #2b2620;
+    }
+
+    @font-face {
+      font-family: "WordArtCustom";
+      src: url("./YuWeiShuFaXingShuFanTi-1.ttf") format("truetype");
+      font-display: block;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      overflow: auto;
+      background:
+        radial-gradient(circle at 50% 0%, rgba(234, 205, 160, 0.16), transparent 34rem),
+        #2b2620;
+      font-family: Georgia, "Times New Roman", "Songti SC", "SimSun", serif;
+    }
+
+    #stage {
+      width: min(900px, calc(100vw - 28px));
+      aspect-ratio: 3 / 4;
+      margin: 14px;
+      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+      background: #eee0c6;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <main id="stage" aria-label="WordArt animation preview"></main>
+
+  <script>
+    (function () {
+      const stage = document.getElementById("stage");
+      let canvas;
+      let ctx;
+      let density = 1;
+      let logicalWidth = 0;
+      let logicalHeight = 0;
+      let currentTextSize = 16;
+      let currentFontFamily = "serif";
+      let fillEnabled = true;
+      let strokeEnabled = true;
+      let currentFill = "rgba(0, 0, 0, 1)";
+      let currentStroke = "rgba(0, 0, 0, 1)";
+      let shapePoints = [];
+      let randomState = 1;
+
+      function syncCanvasSize() {
+        if (!canvas) return;
+        canvas.width = Math.round(logicalWidth * density);
+        canvas.height = Math.round(logicalHeight * density);
+        canvas.style.width = logicalWidth + "px";
+        canvas.style.height = logicalHeight + "px";
+        ctx.setTransform(density, 0, 0, density, 0, 0);
+      }
+
+      function colorValue(args) {
+        let r = 0;
+        let g = 0;
+        let b = 0;
+        let a = 255;
+
+        if (args.length === 1) {
+          r = g = b = Number(args[0]);
+        } else {
+          r = Number(args[0] ?? 0);
+          g = Number(args[1] ?? r);
+          b = Number(args[2] ?? r);
+          a = Number(args[3] ?? 255);
+        }
+
+        return `rgba(${r}, ${g}, ${b}, ${Math.max(0, Math.min(255, a)) / 255})`;
+      }
+
+      function applyTextFont() {
+        ctx.font = `${currentTextSize}px ${currentFontFamily}`;
+      }
+
+      function drawPath(pathBuilder) {
+        ctx.beginPath();
+        pathBuilder();
+        if (fillEnabled) {
+          ctx.fillStyle = currentFill;
+          ctx.fill();
+        }
+        if (strokeEnabled) {
+          ctx.strokeStyle = currentStroke;
+          ctx.stroke();
+        }
+      }
+
+      function seededRandom() {
+        randomState = (randomState * 1664525 + 1013904223) >>> 0;
+        return randomState / 4294967296;
+      }
+
+      function fract(value) {
+        return value - Math.floor(value);
+      }
+
+      window.CENTER = "center";
+      window.CLOSE = "close";
+      window.PI = Math.PI;
+      window.TWO_PI = Math.PI * 2;
+      window.frameCount = 0;
+
+      Object.defineProperty(window, "width", { get: () => logicalWidth });
+      Object.defineProperty(window, "height", { get: () => logicalHeight });
+      Object.defineProperty(window, "drawingContext", { get: () => ctx });
+
+      window.createCanvas = function (w, h) {
+        logicalWidth = w;
+        logicalHeight = h;
+        canvas = document.createElement("canvas");
+        ctx = canvas.getContext("2d");
+        stage.innerHTML = "";
+        stage.appendChild(canvas);
+        syncCanvasSize();
+        applyTextFont();
+        canvas.addEventListener("pointerdown", function () {
+          if (typeof window.mousePressed === "function") {
+            window.mousePressed();
+          }
+        });
+        return canvas;
+      };
+
+      window.pixelDensity = function (value) {
+        density = Number(value) || 1;
+        syncCanvasSize();
+      };
+
+      window.background = function (...args) {
+        ctx.save();
+        ctx.setTransform(density, 0, 0, density, 0, 0);
+        ctx.fillStyle = colorValue(args);
+        ctx.fillRect(0, 0, logicalWidth, logicalHeight);
+        ctx.restore();
+      };
+
+      window.textFont = function (family) {
+        currentFontFamily = family || "serif";
+        applyTextFont();
+      };
+
+      window.textSize = function (size) {
+        currentTextSize = size;
+        applyTextFont();
+      };
+
+      window.textAlign = function (horizontal, vertical) {
+        ctx.textAlign = horizontal === window.CENTER ? "center" : horizontal;
+        ctx.textBaseline = vertical === window.CENTER ? "middle" : "alphabetic";
+      };
+
+      window.fill = function (...args) {
+        fillEnabled = true;
+        currentFill = colorValue(args);
+      };
+
+      window.noFill = function () {
+        fillEnabled = false;
+      };
+
+      window.stroke = function (...args) {
+        strokeEnabled = true;
+        currentStroke = colorValue(args);
+      };
+
+      window.noStroke = function () {
+        strokeEnabled = false;
+      };
+
+      window.strokeWeight = function (value) {
+        ctx.lineWidth = value;
+      };
+
+      window.rect = function (x, y, w, h, radius) {
+        drawPath(function () {
+          if (!radius) {
+            ctx.rect(x, y, w, h);
+            return;
+          }
+          const r = Math.min(Math.abs(radius), Math.abs(w) / 2, Math.abs(h) / 2);
+          const x2 = x + w;
+          const y2 = y + h;
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x2 - r, y);
+          ctx.quadraticCurveTo(x2, y, x2, y + r);
+          ctx.lineTo(x2, y2 - r);
+          ctx.quadraticCurveTo(x2, y2, x2 - r, y2);
+          ctx.lineTo(x + r, y2);
+          ctx.quadraticCurveTo(x, y2, x, y2 - r);
+          ctx.lineTo(x, y + r);
+          ctx.quadraticCurveTo(x, y, x + r, y);
+        });
+      };
+
+      window.circle = function (x, y, diameter) {
+        window.ellipse(x, y, diameter, diameter);
+      };
+
+      window.ellipse = function (x, y, w, h) {
+        drawPath(function () {
+          ctx.ellipse(x, y, Math.abs(w) / 2, Math.abs(h) / 2, 0, 0, Math.PI * 2);
+        });
+      };
+
+      window.line = function (x1, y1, x2, y2) {
+        if (!strokeEnabled) return;
+        ctx.beginPath();
+        ctx.moveTo(x1, y1);
+        ctx.lineTo(x2, y2);
+        ctx.strokeStyle = currentStroke;
+        ctx.stroke();
+      };
+
+      window.triangle = function (x1, y1, x2, y2, x3, y3) {
+        drawPath(function () {
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.lineTo(x3, y3);
+          ctx.closePath();
+        });
+      };
+
+      window.quad = function (x1, y1, x2, y2, x3, y3, x4, y4) {
+        drawPath(function () {
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
+          ctx.lineTo(x3, y3);
+          ctx.lineTo(x4, y4);
+          ctx.closePath();
+        });
+      };
+
+      window.beginShape = function () {
+        shapePoints = [];
+      };
+
+      window.vertex = function (x, y) {
+        shapePoints.push([x, y]);
+      };
+
+      window.endShape = function (mode) {
+        if (shapePoints.length === 0) return;
+        drawPath(function () {
+          ctx.moveTo(shapePoints[0][0], shapePoints[0][1]);
+          for (let i = 1; i < shapePoints.length; i++) {
+            ctx.lineTo(shapePoints[i][0], shapePoints[i][1]);
+          }
+          if (mode === window.CLOSE) {
+            ctx.closePath();
+          }
+        });
+      };
+
+      window.text = function (value, x, y) {
+        applyTextFont();
+        if (fillEnabled) {
+          ctx.fillStyle = currentFill;
+          ctx.fillText(value, x, y);
+        }
+        if (strokeEnabled) {
+          ctx.strokeStyle = currentStroke;
+          ctx.strokeText(value, x, y);
+        }
+      };
+
+      window.push = function () {
+        ctx.save();
+      };
+
+      window.pop = function () {
+        ctx.restore();
+      };
+
+      window.translate = function (x, y) {
+        ctx.translate(x, y);
+      };
+
+      window.rotate = function (angle) {
+        ctx.rotate(angle);
+      };
+
+      window.scale = function (x, y) {
+        ctx.scale(x, y === undefined ? x : y);
+      };
+
+      window.randomSeed = function (seed) {
+        randomState = seed >>> 0;
+      };
+
+      window.random = function (min, max) {
+        const value = seededRandom();
+        if (min === undefined) return value;
+        if (max === undefined) return value * min;
+        return min + value * (max - min);
+      };
+
+      window.noise = function (x, y) {
+        return fract(Math.sin((x || 0) * 127.1 + (y || 0) * 311.7) * 43758.5453123);
+      };
+
+      window.createVector = function (x, y) {
+        return { x, y };
+      };
+
+      window.constrain = function (value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      };
+
+      window.map = function (value, start1, stop1, start2, stop2) {
+        return start2 + (stop2 - start2) * ((value - start1) / (stop1 - start1));
+      };
+
+      window.lerp = function (start, stop, amount) {
+        return start + (stop - start) * amount;
+      };
+
+      window.dist = function (x1, y1, x2, y2) {
+        return Math.hypot(x2 - x1, y2 - y1);
+      };
+
+      window.sqrt = Math.sqrt;
+      window.abs = Math.abs;
+      window.max = Math.max;
+      window.floor = Math.floor;
+      window.pow = Math.pow;
+      window.sin = Math.sin;
+      window.cos = Math.cos;
+
+      window.__startPreview = function () {
+        if (typeof window.setup === "function") {
+          window.setup();
+        }
+
+        const params = new URLSearchParams(window.location.search);
+        const targetFrame = Number(params.get("frame") || 0);
+        const pause = params.get("pause") === "1";
+
+        function renderOneFrame() {
+          window.frameCount += 1;
+          if (typeof window.draw === "function") {
+            window.draw();
+          }
+        }
+
+        if (targetFrame > 0) {
+          while (window.frameCount < targetFrame) {
+            renderOneFrame();
+          }
+        }
+
+        if (pause) return;
+
+        function loop() {
+          renderOneFrame();
+          requestAnimationFrame(loop);
+        }
+
+        requestAnimationFrame(loop);
+      };
+    })();
+  </script>
+  <script src="dear-ama.js" charset="utf-8"></script>
+  <script>
+    if (document.fonts) {
+      Promise.all([
+        document.fonts.load('34px "WordArtCustom"'),
+        document.fonts.load('42px "WordArtCustom"'),
+        document.fonts.ready
+      ]).then(function () {
+        window.__startPreview();
+      });
+    } else {
+      window.__startPreview();
+    }
+  </script>
+</body>
+</html>
