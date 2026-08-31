@@ -3,7 +3,7 @@
 > 把一本工具书，做成一段真的想走完的冒险。  
 > Turning a technical book into an adventure you might actually want to finish.
 
-**在线体验 / Live:** https://lieggeg.github.io/little-experiments/TA_Adventure/
+**在线体验 / Live:** https://lieggegg.github.io/little-experiments/TA_Adventure/
 
 ## 中文
 
