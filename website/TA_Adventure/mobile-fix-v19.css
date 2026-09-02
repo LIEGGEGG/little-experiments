@@ -1,0 +1,30 @@
+/* TA Adventure v19 mobile-only fix: graph viewport containment */
+@media(max-width:720px){
+  #panel-graph,
+  #panel-graph .canvas-card,
+  #panel-graph .graph-toolbar,
+  #panel-graph .graph-toolbar-row,
+  #panel-graph .graph-search,
+  #panel-graph .graph-tags-panel,
+  #panel-graph .graph-main,
+  #panel-graph .graph-info{
+    width:100%;max-width:100%;min-width:0;
+  }
+  #panel-graph .canvas-card{overflow:hidden}
+  #panel-graph .graph-toolbar{overflow:hidden}
+  #panel-graph .graph-search .search{width:100%;max-width:100%;min-width:0}
+  #panel-graph .graph-tags-panel .terms{width:100%;max-width:100%;min-width:0}
+  #panel-graph .graph-canvas-wrap{
+    display:block;width:100%;max-width:100%;min-width:0;
+    overflow-x:auto!important;overflow-y:hidden!important;
+    -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+    touch-action:pan-x;contain:layout paint;
+  }
+  #panel-graph .graph-canvas-wrap canvas{
+    display:block;max-width:none!important;min-width:960px!important;width:960px!important;height:auto!important;
+  }
+  .mobile-toc-toggle{
+    position:relative;z-index:2;touch-action:manipulation;
+    -webkit-tap-highlight-color:rgba(255,215,0,.18);
+  }
+}
