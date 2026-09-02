@@ -51,7 +51,17 @@
 
   const init=()=>{
     const tocButton=document.querySelector('#bookSidebar .mobile-toc-toggle');
-    if(tocButton)tocButton.setAttribute('aria-expanded','false');
+    if(tocButton){
+      // Do not depend on the source HTML's inline onclick. Bind explicitly after
+      // the injected patch loads so iOS/WebView receives a normal button click.
+      tocButton.removeAttribute('onclick');
+      tocButton.setAttribute('aria-expanded','false');
+      tocButton.addEventListener('click',function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        toggleMobileTOC();
+      });
+    }
     if(typeof currentView!=='undefined'&&currentView==='graph')requestAnimationFrame(stabilizeGraphMobileV19);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
