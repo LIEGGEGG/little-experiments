@@ -21,33 +21,38 @@
     if(!wrap)return;
     wrap.style.width='100%';
     wrap.style.maxWidth='100%';
-    if(!window.graphSelected&&wrap.scrollLeft===0&&typeof window.graphTermsV11==='function'){
-      const current=window.graphTermsV11().find(o=>typeof window.termCurrent==='function'&&window.termCurrent(o.term)&&window.GRAPH_POS?.[o.term]);
+
+    // GRAPH_POS / GRAPH_W_V8 / graphSelected / currentView are global lexical
+    // bindings in the source document (let/const), so read them by identifier
+    // rather than through window.*.
+    const hasSelection=typeof graphSelected!=='undefined'&&!!graphSelected;
+    if(!hasSelection&&wrap.scrollLeft===0&&typeof graphTermsV11==='function'&&typeof termCurrent==='function'&&typeof GRAPH_POS!=='undefined'){
+      const current=graphTermsV11().find(o=>termCurrent(o.term)&&GRAPH_POS[o.term]);
       if(current){
-        const p=window.GRAPH_POS[current.term];
-        const graphW=window.GRAPH_W_V8||960;
+        const p=GRAPH_POS[current.term];
+        const graphW=typeof GRAPH_W_V8==='number'?GRAPH_W_V8:960;
         requestAnimationFrame(()=>{wrap.scrollLeft=Math.max(0,p[0]*(960/graphW)-wrap.clientWidth*.42)});
       }
     }
   }
   window.stabilizeGraphMobileV19=stabilizeGraphMobileV19;
 
-  if(typeof window.startGraph==='function'){
-    const startGraphBaseV19=window.startGraph;
-    window.startGraph=function(){
+  if(typeof startGraph==='function'){
+    const startGraphBaseV19=startGraph;
+    startGraph=function(){
       startGraphBaseV19.apply(this,arguments);
       requestAnimationFrame(stabilizeGraphMobileV19);
     };
   }
 
   window.addEventListener('resize',()=>{
-    if(window.currentView==='graph')requestAnimationFrame(stabilizeGraphMobileV19);
+    if(typeof currentView!=='undefined'&&currentView==='graph')requestAnimationFrame(stabilizeGraphMobileV19);
   });
 
   const init=()=>{
     const tocButton=document.querySelector('#bookSidebar .mobile-toc-toggle');
     if(tocButton)tocButton.setAttribute('aria-expanded','false');
-    if(window.currentView==='graph')requestAnimationFrame(stabilizeGraphMobileV19);
+    if(typeof currentView!=='undefined'&&currentView==='graph')requestAnimationFrame(stabilizeGraphMobileV19);
   };
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
   else init();
