@@ -1,4 +1,14 @@
-/* TA Adventure v19 mobile-only fix: graph viewport containment */
+/* TA Adventure v19 patch: desktop graph toolbar + mobile graph viewport */
+
+/* Desktop/tablet: the terminology search owns the flexible column. */
+#panel-graph .graph-toolbar-row{
+  grid-template-columns:minmax(0,1fr) auto;
+}
+#panel-graph .graph-search,
+#panel-graph .graph-search .search{
+  width:100%;min-width:0;box-sizing:border-box;
+}
+
 @media(max-width:720px){
   #panel-graph,
   #panel-graph .canvas-card,
@@ -12,16 +22,19 @@
   }
   #panel-graph .canvas-card{overflow:hidden}
   #panel-graph .graph-toolbar{overflow:hidden}
+  #panel-graph .graph-toolbar-row{grid-template-columns:minmax(0,1fr) auto}
   #panel-graph .graph-search .search{width:100%;max-width:100%;min-width:0}
   #panel-graph .graph-tags-panel .terms{width:100%;max-width:100%;min-width:0}
   #panel-graph .graph-canvas-wrap{
     display:block;width:100%;max-width:100%;min-width:0;
     overflow-x:auto!important;overflow-y:hidden!important;
     -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
-    touch-action:pan-x;contain:layout paint;
+    /* Horizontal dragging stays inside the graph; vertical gestures may still scroll the page. */
+    touch-action:pan-x pan-y;contain:layout paint;
   }
   #panel-graph .graph-canvas-wrap canvas{
     display:block;max-width:none!important;min-width:960px!important;width:960px!important;height:auto!important;
+    touch-action:pan-x pan-y;
   }
   .mobile-toc-toggle{
     position:relative;z-index:2;touch-action:manipulation;

@@ -18,8 +18,9 @@
         const res=await fetch(source,{cache:'no-cache'});
         if(!res.ok)throw new Error('HTTP '+res.status);
         let html=await res.text();
-        html=html.replace('</head>','<link rel="stylesheet" href="./mobile-fix-v19.css"></head>');
-        html=html.replace('</body>','<script src="./mobile-fix-v19.js"><\\/script></body>');
+        html=html.replace('</head>','<link rel="stylesheet" href="./mobile-fix-v19.css?v=3"></head>');
+        const mobileFixScript='<script src="./mobile-fix-v19.js?v=3"></'+'script>';
+        html=html.replace('</body>',mobileFixScript+'</body>');
         document.open();
         document.write(html);
         document.close();
