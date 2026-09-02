@@ -1,12 +1,36 @@
-/* TA Adventure v19 patch: desktop graph toolbar + mobile graph viewport */
+/* TA Adventure v19 patch: desktop graph width + mobile graph viewport */
 
-/* Desktop/tablet: the terminology search owns the flexible column. */
+/* The graph lives inside .canvas-card, which is a wrapping flex container in the source page.
+   Force the graph's direct sections to occupy a full row so the toolbar never shrinks to content width. */
+#panel-graph .canvas-card > .canvas-head,
+#panel-graph .canvas-card > .graph-toolbar,
+#panel-graph .canvas-card > .graph-main,
+#panel-graph .canvas-card > .graph-info{
+  flex:0 0 100%;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+/* Desktop/tablet: search takes all remaining width, quick-select keeps intrinsic width. */
 #panel-graph .graph-toolbar-row{
-  grid-template-columns:minmax(0,1fr) auto;
+  width:100%;
+  min-width:0;
+  grid-template-columns:minmax(0,1fr) auto!important;
 }
 #panel-graph .graph-search,
 #panel-graph .graph-search .search{
-  width:100%;min-width:0;box-sizing:border-box;
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+#panel-graph .graph-tags-panel{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
 }
 
 @media(max-width:720px){
@@ -22,14 +46,13 @@
   }
   #panel-graph .canvas-card{overflow:hidden}
   #panel-graph .graph-toolbar{overflow:hidden}
-  #panel-graph .graph-toolbar-row{grid-template-columns:minmax(0,1fr) auto}
+  #panel-graph .graph-toolbar-row{grid-template-columns:minmax(0,1fr) auto!important}
   #panel-graph .graph-search .search{width:100%;max-width:100%;min-width:0}
   #panel-graph .graph-tags-panel .terms{width:100%;max-width:100%;min-width:0}
   #panel-graph .graph-canvas-wrap{
     display:block;width:100%;max-width:100%;min-width:0;
     overflow-x:auto!important;overflow-y:hidden!important;
     -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
-    /* Horizontal dragging stays inside the graph; vertical gestures may still scroll the page. */
     touch-action:pan-x pan-y;contain:layout paint;
   }
   #panel-graph .graph-canvas-wrap canvas{
